@@ -14,6 +14,7 @@ import SkillDetail from "@/pages/learner/skill/SkillDetail";
 import RecallSessions from "@/pages/learner/recall/RecallSessions";
 import RecallQuiz from "@/pages/learner/recall/RecallQuiz";
 import AnalyticsDashboard from "@/pages/learner/analytics/AnalyticsDashboard";
+import Insights from "@/pages/learner/insights/Insights";
 import Notifications from "@/pages/learner/notifications/Notifications";
 import LearnerProfile from "@/pages/learner/profile/LearnerProfile";
 import AdminDashboard from "@/pages/admin/dashboard/AdminDashboard";
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="recall" element={<RecallSessions />} />
               <Route path="recall/:skillId" element={<RecallQuiz />} />
               <Route path="analytics" element={<AnalyticsDashboard />} />
+              <Route path="insights" element={<Insights />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="profile" element={<LearnerProfile />} />
             </Route>

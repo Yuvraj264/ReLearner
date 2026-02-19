@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Target, RefreshCw, Bell, UserCircle, Zap, Activity } from 'lucide-react';
+import { LayoutDashboard, Target, RefreshCw, Bell, UserCircle, Zap, Activity, Brain } from 'lucide-react';
 import SidebarNavItem from '@/components/sidebar/SidebarNavItem';
 
 const LearnerSidebar = () => {
@@ -9,6 +9,7 @@ const LearnerSidebar = () => {
         <SidebarNavItem to="/learner/dashboard" label="Dashboard" icon={LayoutDashboard} />
         <SidebarNavItem to="/learner/skills" label="My Skills" icon={Target} />
         <SidebarNavItem to="/learner/recall" label="Recall Sessions" icon={RefreshCw} />
+        <SidebarNavItem to="/learner/insights" label="Neural Insights" icon={Brain} />
         <SidebarNavItem to="/learner/analytics" label="Analytics" icon={Activity} />
         <SidebarNavItem to="/learner/notifications" label="Notifications" icon={Bell} />
         <SidebarNavItem to="/learner/profile" label="Profile" icon={UserCircle} />
