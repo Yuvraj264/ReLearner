@@ -22,21 +22,23 @@ const Navbar = () => {
         </Link>
 
         <div className="flex items-center gap-1">
-          {/* Portal switcher */}
-          <div className="flex items-center bg-muted/50 rounded-lg p-0.5 mr-2">
-            <button
-              onClick={() => { switchRole(ROLES.LEARNER); navigate('/learner'); }}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${role === ROLES.LEARNER ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              Learner
-            </button>
-            <button
-              onClick={() => { switchRole(ROLES.ADMIN); navigate('/admin'); }}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${role === ROLES.ADMIN ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              Admin
-            </button>
-          </div>
+          {/* Portal switcher - Only show for Admins */}
+          {user?.role === ROLES.ADMIN ? (
+            <div className="flex items-center bg-muted/50 rounded-lg p-0.5 mr-2">
+              <button
+                onClick={() => { switchRole(ROLES.LEARNER); navigate('/learner'); }}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${role === ROLES.LEARNER ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                Learner
+              </button>
+              <button
+                onClick={() => { switchRole(ROLES.ADMIN); navigate('/admin'); }}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${role === ROLES.ADMIN ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                Admin
+              </button>
+            </div>
+          ) : null}
 
           {role === ROLES.LEARNER && (
             <motion.button

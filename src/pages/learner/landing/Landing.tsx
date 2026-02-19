@@ -20,14 +20,19 @@ const Landing = () => {
   const navigate = useNavigate();
 
   const handleEnter = (role: 'learner' | 'admin') => {
-    login(role);
-    navigate(role === 'admin' ? '/admin' : '/learner');
+    // Navigate to login/register based on interaction
+    // For "Enter", we'll send them to login. We can pass role as state if needed, but for now simple redirection.
+    navigate('/login');
   };
+
+  const handleRegister = () => {
+    navigate('/register');
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden">
       <AnimatedBackground />
-      
+
       {/* Hero */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6">
         <motion.div
@@ -60,20 +65,20 @@ const Landing = () => {
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => handleEnter('learner')}
+              onClick={() => navigate('/register')}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-primary-foreground btn-glow transition-all"
               style={{ background: 'linear-gradient(135deg, hsl(192 85% 48%), hsl(210 80% 50%))' }}
             >
-              Enter as Learner
+              Get Started
               <ArrowRight className="w-4 h-4" />
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => handleEnter('admin')}
+              onClick={() => navigate('/login')}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-foreground border border-border hover:border-primary/40 hover:bg-accent transition-all"
             >
-              Enter as Admin
+              Log In
               <ArrowRight className="w-4 h-4" />
             </motion.button>
           </div>

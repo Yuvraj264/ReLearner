@@ -4,30 +4,74 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, CheckCircle2, XCircle, Clock, ArrowRight } from 'lucide-react';
 import PageTransition from '@/components/PageTransition';
 import { skillService } from '@/services/skillService';
+import { generateQuestionsAPI } from '@/services/recallService';
+import { Loader2, Sparkles } from 'lucide-react';
+import { RecallQuestion } from '@/data/skills.mock';
 
 const RecallQuiz = () => {
   const { skillId } = useParams();
   const navigate = useNavigate();
   const skill = skillService.getSkillById(skillId || '');
 
+  const [questions, setQuestions] = useState<RecallQuestion[]>(skill?.recallQuestions || []);
   const [currentQ, setCurrentQ] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
   const [results, setResults] = useState<boolean[]>([]);
   const [completed, setCompleted] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  if (!skill || skill.recallQuestions.length === 0) {
+  const handleGenerateQuestions = async () => {
+    if (!skill) return;
+    setIsGenerating(true);
+    try {
+      const data = await generateQuestionsAPI(skill.name);
+      if (data && data.questions) {
+        setQuestions(data.questions);
+        setCurrentQ(0);
+        setSelected(null);
+        setAnswered(false);
+        setResults([]);
+        setCompleted(false);
+      }
+    } catch (error) {
+      console.error("Failed to generate questions", error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  if (!skill) return null;
+
+  if (questions.length === 0 && !isGenerating) {
     return (
       <PageTransition>
-        <div className="max-w-2xl mx-auto flex flex-col items-center justify-center h-64">
-          <p className="text-muted-foreground mb-4">No recall questions available for this skill.</p>
-          <button onClick={() => navigate(-1)} className="text-sm text-primary hover:underline">Go back</button>
+        <div className="max-w-2xl mx-auto flex flex-col items-center justify-center h-64 space-y-4">
+          <p className="text-muted-foreground">No recall questions available for this skill.</p>
+          <div className="flex gap-4">
+            <button onClick={() => navigate(-1)} className="text-sm text-primary hover:underline">Go back</button>
+            <button
+              onClick={handleGenerateQuestions}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground btn-glow"
+            >
+              <Sparkles size={16} /> Generate with AI
+            </button>
+          </div>
         </div>
       </PageTransition>
     );
   }
 
-  const questions = skill.recallQuestions;
+  if (isGenerating) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <p className="text-muted-foreground animate-pulse">Generating adaptive questions...</p>
+      </div>
+    );
+  }
+
+  // const questions = skill.recallQuestions; // Handled in state
   const question = questions[currentQ];
   const isCorrect = selected === question.correctIndex;
 
@@ -109,9 +153,19 @@ const RecallQuiz = () => {
           {/* Progress */}
           <div className="flex items-center justify-between mb-6">
             <span className="text-xs text-muted-foreground">{skill.name}</span>
-            <div className="flex items-center gap-2">
-              <Clock className="w-3 h-3 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Question {currentQ + 1}/{questions.length}</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleGenerateQuestions}
+                disabled={isGenerating}
+                className="text-xs flex items-center gap-1 text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                title="Generate fresh questions"
+              >
+                <Sparkles size={12} /> Regenerate
+              </button>
+              <div className="flex items-center gap-2">
+                <Clock className="w-3 h-3 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Question {currentQ + 1}/{questions.length}</span>
+              </div>
             </div>
           </div>
 

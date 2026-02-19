@@ -1,39 +1,52 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { User, currentLearner, currentAdmin } from '@/data/users.mock';
-import { Role, ROLES } from '@/constants/roles';
+import { createContext, useContext, useState, ReactNode } from "react";
 
 interface AuthContextType {
-  user: User | null;
-  role: Role;
   isAuthenticated: boolean;
-  login: (role: Role) => void;
+  token: string | null;
+  role: string;
+  user: any;
+  login: (token: string, userData: any) => void;
   logout: () => void;
-  switchRole: (role: Role) => void;
+  switchRole: (role: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(currentLearner);
-  const [role, setRole] = useState<Role>(ROLES.LEARNER);
+  const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
+  const [role, setRole] = useState<string>(localStorage.getItem("role") || "learner");
+  const [user, setUser] = useState<any>(() => {
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
 
-  const login = (selectedRole: Role) => {
-    setRole(selectedRole);
-    setUser(selectedRole === ROLES.ADMIN ? currentAdmin : currentLearner);
+  const isAuthenticated = !!token;
+
+  const login = (token: string, userData: any) => {
+    localStorage.setItem("token", token);
+    localStorage.setItem("role", userData.role);
+    localStorage.setItem("user", JSON.stringify(userData));
+    setToken(token);
+    setRole(userData.role);
+    setUser(userData);
   };
 
   const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("user");
+    setToken(null);
+    setRole("learner");
     setUser(null);
-    setRole(ROLES.LEARNER);
   };
 
-  const switchRole = (newRole: Role) => {
+  const switchRole = (newRole: string) => {
     setRole(newRole);
-    setUser(newRole === ROLES.ADMIN ? currentAdmin : currentLearner);
+    localStorage.setItem("role", newRole);
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, isAuthenticated: !!user, login, logout, switchRole }}>
+    <AuthContext.Provider value={{ isAuthenticated, token, role, user, login, logout, switchRole }}>
       {children}
     </AuthContext.Provider>
   );
@@ -41,6 +54,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
   return context;
 };

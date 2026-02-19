@@ -24,3 +24,34 @@ export const recallService = {
     return { total, passed, failed: total - passed, avgScore, passRate: total > 0 ? Math.round((passed / total) * 100) : 0 };
   },
 };
+
+// API Integration
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
+const authHeader = () => {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+};
+
+export const submitRecallAPI = async (skillId: string, score: number) => {
+  const res = await fetch(`${API_URL}/recall/${skillId}`, {
+    method: 'POST',
+    headers: authHeader(),
+    body: JSON.stringify({ score }),
+  });
+  if (!res.ok) throw new Error('Failed to submit recall');
+  return await res.json();
+};
+
+export const generateQuestionsAPI = async (skillName: string, difficulty: string = 'Intermediate') => {
+  const res = await fetch(`${API_URL}/recall/generate`, {
+    method: 'POST',
+    headers: authHeader(),
+    body: JSON.stringify({ skillName, difficulty }),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to generate questions');
+  }
+  return await res.json();
+};

@@ -1,11 +1,19 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import Navbar from '@/components/navbar/Navbar';
 import AdminSidebar from '@/components/sidebar/AdminSidebar';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import { AdminProvider } from '@/context/AdminContext';
+import { useAuth } from '@/context/AuthContext';
+import { ROLES } from '@/constants/roles';
 
 const AdminLayout = () => {
+  const { user } = useAuth();
+
+  if (user?.role !== ROLES.ADMIN) {
+    return <Navigate to="/learner" replace />;
+  }
+
   return (
     <AdminProvider>
       <div className="min-h-screen flex flex-col">

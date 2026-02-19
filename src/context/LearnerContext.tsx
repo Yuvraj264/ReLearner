@@ -1,26 +1,51 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Skill, mockSkills } from '@/data/skills.mock';
-import { skillService } from '@/services/skillService';
+import { createContext, useContext, useEffect, useState } from "react";
+import {
+  fetchSkills,
+  completeModuleAPI,
+  completeAssessmentAPI
+} from "@/services/skillService";
 
-interface LearnerContextType {
-  enrolledSkills: Skill[];
-  learnedSkills: Skill[];
-  dueRecalls: Skill[];
-  refreshData: () => void;
-}
+export type LearnerContextType = {
+  skills: any[];
+  completeModule: (skillId: string, moduleId: string) => Promise<void>;
+  completeAssessment: (skillId: string) => Promise<void>;
+};
 
-const LearnerContext = createContext<LearnerContextType | undefined>(undefined);
+const LearnerContext = createContext<LearnerContextType | null>(null);
 
-export const LearnerProvider = ({ children }: { children: ReactNode }) => {
-  const [, setTick] = useState(0);
-  const refreshData = () => setTick(t => t + 1);
+export const LearnerProvider = ({ children }: { children: React.ReactNode }) => {
+  const [skills, setSkills] = useState<any[]>([]);
 
-  const enrolledSkills = skillService.getEnrolledSkills();
-  const learnedSkills = skillService.getLearnedSkills();
-  const dueRecalls = skillService.getDueRecalls();
+  useEffect(() => {
+    fetchSkills().then(setSkills).catch(() => setSkills([]));
+  }, []);
+
+  const completeModule = async (skillId: string, moduleId: string) => {
+    const updated = await completeModuleAPI(skillId, moduleId);
+    setSkills(prev =>
+      prev.map(skill =>
+        skill._id === updated._id ? updated : skill
+      )
+    );
+  };
+
+  const completeAssessment = async (skillId: string) => {
+    const updated = await completeAssessmentAPI(skillId);
+    setSkills(prev =>
+      prev.map(skill =>
+        skill._id === updated._id ? updated : skill
+      )
+    );
+  };
 
   return (
-    <LearnerContext.Provider value={{ enrolledSkills, learnedSkills, dueRecalls, refreshData }}>
+    <LearnerContext.Provider
+      value={{
+        skills,
+        completeModule,
+        completeAssessment
+      }}
+    >
       {children}
     </LearnerContext.Provider>
   );
@@ -28,6 +53,8 @@ export const LearnerProvider = ({ children }: { children: ReactNode }) => {
 
 export const useLearner = () => {
   const context = useContext(LearnerContext);
-  if (!context) throw new Error('useLearner must be used within LearnerProvider');
+  if (!context) {
+    throw new Error("useLearner must be used within LearnerProvider");
+  }
   return context;
 };

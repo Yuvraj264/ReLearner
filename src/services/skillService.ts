@@ -51,3 +51,64 @@ export const skillService = {
     return skills.filter(s => s.learned && s.nextRecallDate && new Date(s.nextRecallDate) <= now);
   },
 };
+
+// API Integration
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
+const authHeader = () => {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+};
+
+export const fetchSkills = async (): Promise<Skill[]> => {
+  try {
+    const token = localStorage.getItem('token');
+    // Check if token exists and is plausible length (JWTs are long, "learner" is short)
+    if (!token || token.length < 50) {
+      console.log("No valid token found. Using mock data.");
+      return mockSkills;
+    }
+
+    const res = await fetch(`${API_URL}/skills`, {
+      headers: authHeader(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch skills');
+    return await res.json();
+  } catch (error) {
+    // If API fails (e.g., 401 Unauthorized), fall back to mock data
+    console.warn("API unavailable or unauthorized. Falling back to mock data.");
+    return mockSkills;
+  }
+};
+
+export const completeModuleAPI = async (skillId: string, moduleId: string) => {
+  const token = localStorage.getItem('token');
+  if (!token || token.length < 50) {
+    console.warn("API unavailable or unauthorized. Cannot complete module.");
+    return; // Or handle as needed for offline mode
+  }
+
+  const res = await fetch(`${API_URL}/skills/${skillId}/module`, {
+    method: 'POST',
+    headers: authHeader(),
+    body: JSON.stringify({ moduleId }),
+  });
+  if (!res.ok) throw new Error('Failed to complete module');
+  return await res.json();
+};
+
+export const completeAssessmentAPI = async (skillId: string) => {
+  const token = localStorage.getItem('token');
+  if (!token || token.length < 50) {
+    console.warn("API unavailable or unauthorized. Cannot complete assessment.");
+    return;
+  }
+
+  const res = await fetch(`${API_URL}/skills/${skillId}/assessment`, {
+    method: 'POST',
+    headers: authHeader(),
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) throw new Error('Failed to complete assessment');
+  return await res.json();
+};
