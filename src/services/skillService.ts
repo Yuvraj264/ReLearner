@@ -61,11 +61,36 @@ const authHeader = () => {
 };
 
 export const fetchSkills = async (): Promise<Skill[]> => {
+  // FOR DEMO: Force usage of seeded mock data to visualize Intelligence Command Center
+  // Map mock data flat structure to legacy backend-like structure expected by Dashboard
+  console.log("Using seeded mock data (mapped) for Intelligence Command Center demo");
+
+  const mappedMockSkills = mockSkills.map(s => ({
+    _id: s.id,
+    title: s.name,
+    category: s.category,
+    status: s.learned ? "completed" : "enrolled",
+    completedModules: s.modules?.filter(m => m.completed).length || 0,
+    totalModules: s.modules?.length || 0,
+    retention: {
+      health: s.healthScore,
+      lastReviewed: s.lastRecallDate,
+      nextRecall: s.nextRecallDate,
+      decayRate: s.decayRate || 0.05,
+      criticalThreshold: s.criticalThreshold || 40,
+    },
+    // Keep original properties too for other components (just in case)
+    ...s
+  }));
+
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(mappedMockSkills as any), 800); // Simulate network delay for skeletons
+  });
+
+  /* 
   try {
     const token = localStorage.getItem('token');
-    // Check if token exists and is plausible length (JWTs are long, "learner" is short)
     if (!token || token.length < 50) {
-      console.log("No valid token found. Using mock data.");
       return mockSkills;
     }
 
@@ -75,10 +100,10 @@ export const fetchSkills = async (): Promise<Skill[]> => {
     if (!res.ok) throw new Error('Failed to fetch skills');
     return await res.json();
   } catch (error) {
-    // If API fails (e.g., 401 Unauthorized), fall back to mock data
     console.warn("API unavailable or unauthorized. Falling back to mock data.");
     return mockSkills;
   }
+  */
 };
 
 export const completeModuleAPI = async (skillId: string, moduleId: string) => {

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import PageTransition from '@/components/PageTransition';
-import SkillCard from '@/components/cards/SkillCard';
+import detailedSkillCard from '@/components/cards/DetailedSkillCard';
+import DetailedSkillCard from '@/components/cards/DetailedSkillCard';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { skillService } from '@/services/skillService';
 import { BookOpen, Search } from 'lucide-react';
@@ -54,22 +55,18 @@ const LearnerSkills = () => {
             description={tab === 'enrolled' ? 'Explore available skills to start learning.' : 'All skills are already enrolled.'}
           />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filtered.map(skill => (
-              <SkillCard
+              <DetailedSkillCard
                 key={skill.id}
                 id={skill.id}
                 name={skill.name}
                 category={skill.category}
                 healthScore={skill.healthScore}
                 learned={skill.learned}
-                enrolled={skill.enrolled}
-                nextRecallDate={skill.nextRecallDate}
                 lastRecallDate={skill.lastRecallDate}
                 decayRate={skill.decayRate}
                 criticalThreshold={skill.criticalThreshold}
-                modulesCompleted={skill.modules.filter(m => m.completed).length}
-                totalModules={skill.modules.length}
               />
             ))}
           </div>

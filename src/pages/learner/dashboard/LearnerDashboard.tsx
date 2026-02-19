@@ -16,6 +16,7 @@ import CognitiveStability from "@/components/dashboard/CognitiveStability";
 import RiskIndex from "@/components/dashboard/RiskIndex";
 import RecallMomentum from "@/components/dashboard/RecallMomentum";
 import WeeklyGrowth from "@/components/dashboard/WeeklyGrowth";
+import RecallCountdown from "@/components/dashboard/RecallCountdown";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 
 import { useLearner } from "@/context/LearnerContext";
@@ -123,6 +124,9 @@ const LearnerDashboard = () => {
           >
             <div className="absolute top-0 left-0 w-1 h-full bg-warning"></div>
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              import RecallCountdown from "@/components/dashboard/RecallCountdown";
+
+              // ... inside the dueRecalls map or section
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-full bg-warning/10 border border-warning/20 shadow-[0_0_15px_rgba(255,165,0,0.3)]">
                   <Clock className="w-6 h-6 text-warning" />
@@ -131,9 +135,12 @@ const LearnerDashboard = () => {
                   <h3 className="text-lg font-bold text-foreground">
                     Action Required: {dueRecalls.length} Skills Critical
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Immediate recall session recommended to prevent memory decay.
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-sm text-muted-foreground">
+                      Immediate recall recommended.
+                    </p>
+                    <RecallCountdown nextCriticalDate={dueRecalls[0].retention.nextRecall} />
+                  </div>
                 </div>
               </div>
 
