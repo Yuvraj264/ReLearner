@@ -1,146 +1,140 @@
 import React, { useMemo } from 'react';
 import {
-    AreaChart,
-    Area,
+    LineChart,
+    Line,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    ReferenceLine,
+    Area,
+    ComposedChart
 } from 'recharts';
-import { format, addDays } from 'date-fns';
-import { motion } from 'framer-motion';
 
 interface SkillDecayGraphProps {
-    currentRetention: number;
-    decayRate?: number; // Daily decay percentage (e.g., 1.5 for 1.5% loss per day)
+    currentScore: number;
+    decayRate?: number;
+    daysToProject?: number;
     height?: number;
-    className?: string;
+    showAxes?: boolean;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+        const data = payload[0].payload;
         return (
-            <div className="glass-card p-3 border border-primary/20 shadow-xl backdrop-blur-md bg-background/80 rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">{label}</p>
+            <div className="bg-background/90 backdrop-blur-md border border-white/10 p-3 rounded-lg shadow-xl">
+                <p className="text-xs text-muted-foreground font-mono mb-1">{label}</p>
                 <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                    <p className="text-sm font-bold text-foreground">
-                        {payload[0].value}% <span className="text-[10px] uppercase text-muted-foreground font-normal">Retention</span>
-                    </p>
+                    <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary))]"></div>
+                    <span className="text-sm font-bold text-foreground">
+                        {data.score}% Retention
+                    </span>
                 </div>
-                <p className="text-[10px] text-critical mt-1 font-medium">
-                    -{payload[0].payload.decay.toFixed(1)}% predicted loss
-                </p>
+                {data.loss > 0 && (
+                    <p className="text-[10px] text-critical mt-1 text-right">
+                        -{data.loss}% loss
+                    </p>
+                )}
             </div>
         );
     }
     return null;
 };
 
-const SkillDecayGraph: React.FC<SkillDecayGraphProps> = ({
-    currentRetention,
-    decayRate = 2.5, // Default decay rate
-    height = 250,
-    className = '',
-}) => {
-    // Generate predictive data for the next 7 days
+const SkillDecayGraph = ({
+    currentScore,
+    decayRate = 0.1,
+    daysToProject = 7,
+    height = 200,
+    showAxes = true
+}: SkillDecayGraphProps) => {
+
     const data = useMemo(() => {
-        const today = new Date();
         const points = [];
+        const today = new Date();
 
-        let currentScore = currentRetention;
+        for (let i = 0; i <= daysToProject; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() + i);
 
-        for (let i = 0; i <= 7; i++) {
-            // Simple exponential decay model: N(t) = N0 * (1 - r)^t
-            // Or linear for simplicity in short term: Score - (Rate * Days)
-            // Let's use a slightly accelerating decay for realism
-            const dayDecay = i === 0 ? 0 : decayRate * (1 + i * 0.1);
-            currentScore = Math.max(0, parseFloat((currentScore - dayDecay).toFixed(1)));
+            // Decay Formula: P = S * e^(-r * t)
+            const predicted = Math.max(0, currentScore * Math.exp(-decayRate * i));
+            const roundedScore = Math.round(predicted * 10) / 10;
 
             points.push({
-                day: i === 0 ? 'Today' : format(addDays(today, i), 'MMM d'),
-                score: currentScore,
-                decay: dayDecay,
-                isCritical: currentScore < 40,
-                isWarning: currentScore >= 40 && currentScore < 70,
+                day: i === 0 ? 'Today' : `Day ${i}`,
+                fullDate: date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+                score: roundedScore,
+                loss: Math.round((currentScore - roundedScore) * 10) / 10
             });
-
-            // Update base for next iteration if using compound, but here we just subtracted from previous
-            // Actually, let's reset to proper recursive deduction for the loop
-            // But for the graph visuals, the above linear-ish subtraction works fine for 7 days.
         }
         return points;
-    }, [currentRetention, decayRate]);
-
-    // Determine chart color based on start status
-    const startColor = currentRetention >= 70
-        ? 'var(--healthy)'
-        : currentRetention >= 40
-            ? 'var(--warning)'
-            : 'var(--critical)';
+    }, [currentScore, decayRate, daysToProject]);
 
     return (
-        <motion.div
-            className={`w-full ${className}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-        >
-            <div className="h-full w-full min-h-[200px]" style={{ height }}>
-                <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                        data={data}
-                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                    >
-                        <defs>
-                            <linearGradient id="colorRetention" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor={`hsl(${startColor})`} stopOpacity={0.3} />
-                                <stop offset="95%" stopColor={`hsl(${startColor})`} stopOpacity={0} />
-                            </linearGradient>
-                        </defs>
+        <div className="w-full h-full min-h-[100px]" style={{ height }}>
+            <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                        <linearGradient id="neonGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        </linearGradient>
+                        <filter id="neonGlow" height="130%">
+                            <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+                            <feOffset in="blur" dx="0" dy="0" result="offsetBlur" />
+                            <feFlood floodColor="hsl(var(--primary))" floodOpacity="0.6" result="glowColor" />
+                            <feComposite in="glowColor" in2="offsetBlur" operator="in" result="glow" />
+                            <feMerge>
+                                <feMergeNode in="glow" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
 
-                        <CartesianGrid
-                            strokeDasharray="3 3"
-                            vertical={false}
-                            stroke="hsl(var(--border))"
-                            opacity={0.3}
-                        />
+                    {showAxes && <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />}
 
-                        <XAxis
-                            dataKey="day"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                            dy={10}
-                        />
+                    <XAxis
+                        dataKey="day"
+                        tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }}
+                        axisLine={false}
+                        tickLine={false}
+                        hide={!showAxes}
+                    />
 
-                        <YAxis
-                            domain={[0, 100]}
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                        />
+                    <YAxis
+                        domain={[0, 100]}
+                        tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }}
+                        axisLine={false}
+                        tickLine={false}
+                        hide={!showAxes}
+                    />
 
-                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: `hsl(${startColor})`, strokeWidth: 1, strokeDasharray: '4 4' }} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }} />
 
-                        <ReferenceLine y={70} stroke="hsl(var(--healthy))" strokeDasharray="3 3" opacity={0.3} />
-                        <ReferenceLine y={40} stroke="hsl(var(--critical))" strokeDasharray="3 3" opacity={0.3} />
+                    <Area
+                        type="monotone"
+                        dataKey="score"
+                        stroke="none"
+                        fill="url(#neonGradient)"
+                        animationDuration={1500}
+                    />
 
-                        <Area
-                            type="monotone"
-                            dataKey="score"
-                            stroke={`hsl(${startColor})`}
-                            strokeWidth={3}
-                            fill="url(#colorRetention)"
-                            animationDuration={2000}
-                            animationEasing="ease-in-out"
-                        />
-                    </AreaChart>
-                </ResponsiveContainer>
-            </div>
-        </motion.div>
+                    <Line
+                        type="monotone"
+                        dataKey="score"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={3}
+                        dot={{ r: 3, fill: "hsl(var(--primary))", strokeWidth: 0 }}
+                        activeDot={{ r: 6, fill: "hsl(var(--background))", stroke: "hsl(var(--primary))", strokeWidth: 2 }}
+                        filter="url(#neonGlow)"
+                        animationDuration={1500}
+                        animationEasing="ease-out"
+                    />
+                </ComposedChart>
+            </ResponsiveContainer>
+        </div>
     );
 };
 
