@@ -65,6 +65,9 @@ const LearnerSkills = () => {
                 learned={skill.learned}
                 enrolled={skill.enrolled}
                 nextRecallDate={skill.nextRecallDate}
+                lastRecallDate={skill.lastRecallDate}
+                decayRate={skill.decayRate}
+                criticalThreshold={skill.criticalThreshold}
                 modulesCompleted={skill.modules.filter(m => m.completed).length}
                 totalModules={skill.modules.length}
               />

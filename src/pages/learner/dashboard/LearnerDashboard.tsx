@@ -189,6 +189,9 @@ const LearnerDashboard = () => {
                 learned={skill.status === "completed"}
                 enrolled
                 nextRecallDate={skill.retention?.nextRecall}
+                lastRecallDate={skill.retention?.lastReviewed}
+                decayRate={skill.retention?.decayRate}
+                criticalThreshold={skill.retention?.criticalThreshold}
                 modulesCompleted={skill.completedModules}
                 totalModules={skill.totalModules}
               />

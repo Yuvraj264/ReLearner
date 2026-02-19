@@ -30,6 +30,8 @@ export interface Skill {
   recallQuestions: RecallQuestion[];
   learnedDate: string | null;
   enrolledDate: string | null;
+  decayRate?: number;
+  criticalThreshold?: number;
 }
 
 export const mockSkills: Skill[] = [
@@ -42,6 +44,8 @@ export const mockSkills: Skill[] = [
     healthScore: 88,
     enrolled: true,
     learned: true,
+    decayRate: 0.05,
+    criticalThreshold: 40,
     modules: [
       { id: 'm1', title: 'Component Composition', duration: '15 min', completed: true },
       { id: 'm2', title: 'State Lifting Patterns', duration: '12 min', completed: true },

@@ -1,36 +1,40 @@
-import { DECAY_RATES } from '@/constants/recallIntervals';
-
-export const calculateRetention = (
-  initialScore: number,
-  daysSinceLastRecall: number,
-  decayRate: number = DECAY_RATES.MODERATE
+export const calculatePredictedRetention = (
+  currentScore: number,
+  daysSinceLastReview: number,
+  decayRate: number = 0.1
 ): number => {
-  const retention = initialScore * Math.pow(decayRate, daysSinceLastRecall / 7);
-  return Math.max(0, Math.min(100, Math.round(retention)));
+  if (daysSinceLastReview < 0) return currentScore;
+  const predicted = currentScore * Math.exp(-decayRate * daysSinceLastReview);
+  return Math.max(0, Math.min(100, Math.round(predicted)));
 };
 
-export const calculateDecayRate = (
-  recallHistory: { score: number; date: string }[]
+export const calculateDaysUntilCritical = (
+  currentScore: number,
+  decayRate: number = 0.1,
+  criticalThreshold: number = 40
 ): number => {
-  if (recallHistory.length < 2) return DECAY_RATES.MODERATE;
-  const avgScore = recallHistory.reduce((sum, r) => sum + r.score, 0) / recallHistory.length;
-  if (avgScore >= 85) return DECAY_RATES.SLOW;
-  if (avgScore >= 60) return DECAY_RATES.MODERATE;
-  return DECAY_RATES.FAST;
+  if (currentScore <= criticalThreshold) return 0;
+  if (decayRate <= 0) return Infinity;
+
+  const days = -Math.log(criticalThreshold / currentScore) / decayRate;
+  return Math.max(0, Math.ceil(days));
 };
 
-export const getNextRecallDate = (
-  lastRecallDate: string,
-  intervalDays: number
-): string => {
-  const date = new Date(lastRecallDate);
-  date.setDate(date.getDate() + intervalDays);
-  return date.toISOString();
-};
+export const suggestOptimalRecallDate = (
+  lastReviewed: string | null,
+  daysUntilCritical: number
+): Date => {
+  if (!lastReviewed) return new Date();
 
-export const getDaysUntilNextRecall = (nextRecallDate: string): number => {
-  const now = new Date();
-  const next = new Date(nextRecallDate);
-  const diff = next.getTime() - now.getTime();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  if (daysUntilCritical === Infinity) {
+    const date = new Date(lastReviewed);
+    date.setDate(date.getDate() + 30);
+    return date;
+  }
+
+  // Suggest recall at 80% to critical, or at least tomorrow
+  const optimalDays = Math.max(1, Math.floor(daysUntilCritical * 0.8));
+  const date = new Date(lastReviewed);
+  date.setDate(date.getDate() + optimalDays);
+  return date;
 };
