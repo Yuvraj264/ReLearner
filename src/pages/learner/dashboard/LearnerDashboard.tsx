@@ -12,13 +12,14 @@ import PageTransition from "@/components/PageTransition";
 import StatCard from "@/components/cards/StatCard";
 import SkillCard from "@/components/cards/SkillCard";
 import RetentionChart from "@/components/charts/RetentionChart";
+import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 
 import { useLearner } from "@/context/LearnerContext";
 import { calculateOverallScore } from "@/utils/scoreUtils";
 
 const LearnerDashboard = () => {
   const navigate = useNavigate();
-  const { skills } = useLearner();
+  const { skills, loading } = useLearner();
 
   const learnedSkills = useMemo(
     () => skills.filter(s => s.status === "completed"),
@@ -62,6 +63,8 @@ const LearnerDashboard = () => {
       ? history.sort((a, b) => a.date.localeCompare(b.date))
       : [{ date: "Now", score: overallHealth }];
   }, [learnedSkills, overallHealth]);
+
+  if (loading) return <DashboardSkeleton />;
 
   return (
     <PageTransition>

@@ -20,6 +20,7 @@ const RecallQuiz = () => {
   const [results, setResults] = useState<boolean[]>([]);
   const [completed, setCompleted] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [streak, setStreak] = useState(0);
 
   const handleGenerateQuestions = async () => {
     if (!skill) return;
@@ -75,11 +76,20 @@ const RecallQuiz = () => {
   const question = questions[currentQ];
   const isCorrect = selected === question.correctIndex;
 
+
+
   const handleSelect = (idx: number) => {
     if (answered) return;
     setSelected(idx);
     setAnswered(true);
-    setResults(prev => [...prev, idx === question.correctIndex]);
+    const correct = idx === question.correctIndex;
+    setResults(prev => [...prev, correct]);
+
+    if (correct) {
+      setStreak(prev => prev + 1);
+    } else {
+      setStreak(0);
+    }
   };
 
   const handleNext = () => {
@@ -166,86 +176,99 @@ const RecallQuiz = () => {
                 <Clock className="w-3 h-3 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">Question {currentQ + 1}/{questions.length}</span>
               </div>
+
+              <AnimatePresence>
+                {streak > 1 && (
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    className="flex items-center gap-1 px-2 py-1 rounded bg-orange-500/10 text-orange-500 text-xs font-bold border border-orange-500/20"
+                  >
+                    <span className="animate-pulse">🔥</span> {streak}x Streak
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
-
-          <div className="h-1 bg-muted rounded-full mb-6 overflow-hidden">
-            <motion.div
-              className="h-full bg-primary rounded-full"
-              animate={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentQ}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              <h2 className="text-lg font-semibold text-foreground mb-6">{question.question}</h2>
-
-              <div className="space-y-3">
-                {question.options.map((opt, idx) => {
-                  let optClass = 'border-border hover:border-primary/40 hover:bg-accent/50';
-                  if (answered) {
-                    if (idx === question.correctIndex) optClass = 'border-healthy/50 bg-healthy/10';
-                    else if (idx === selected) optClass = 'border-critical/50 bg-critical/10';
-                    else optClass = 'border-border opacity-50';
-                  }
-
-                  return (
-                    <motion.button
-                      key={idx}
-                      whileHover={!answered ? { scale: 1.01 } : {}}
-                      whileTap={!answered ? { scale: 0.99 } : {}}
-                      onClick={() => handleSelect(idx)}
-                      className={`w-full text-left p-4 rounded-xl border text-sm transition-all ${optClass} ${answered ? 'cursor-default' : 'cursor-pointer'}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-medium flex-shrink-0">
-                          {String.fromCharCode(65 + idx)}
-                        </span>
-                        <span className="text-foreground">{opt}</span>
-                        {answered && idx === question.correctIndex && <CheckCircle2 className="w-4 h-4 text-healthy ml-auto" />}
-                        {answered && idx === selected && idx !== question.correctIndex && <XCircle className="w-4 h-4 text-critical ml-auto" />}
-                      </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
-
-              {answered && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-4 p-4 rounded-xl bg-muted/50 border border-border"
-                >
-                  <p className="text-xs text-muted-foreground">{question.explanation}</p>
-                </motion.div>
-              )}
-            </motion.div>
-          </AnimatePresence>
-
-          {answered && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mt-6 flex justify-end"
-            >
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={handleNext}
-                className="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-medium rounded-lg text-primary-foreground bg-primary btn-glow"
-              >
-                {currentQ + 1 >= questions.length ? 'See Results' : 'Next'} <ArrowRight className="w-3 h-3" />
-              </motion.button>
-            </motion.div>
-          )}
         </div>
+
+        <div className="h-1 bg-muted rounded-full mb-6 overflow-hidden">
+          <motion.div
+            className="h-full bg-primary rounded-full"
+            animate={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
+            transition={{ duration: 0.3 }}
+          />
+        </div>
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentQ}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
+          >
+            <h2 className="text-lg font-semibold text-foreground mb-6">{question.question}</h2>
+
+            <div className="space-y-3">
+              {question.options.map((opt, idx) => {
+                let optClass = 'border-border hover:border-primary/40 hover:bg-accent/50';
+                if (answered) {
+                  if (idx === question.correctIndex) optClass = 'border-healthy/50 bg-healthy/10';
+                  else if (idx === selected) optClass = 'border-critical/50 bg-critical/10';
+                  else optClass = 'border-border opacity-50';
+                }
+
+                return (
+                  <motion.button
+                    key={idx}
+                    whileHover={!answered ? { scale: 1.01 } : {}}
+                    whileTap={!answered ? { scale: 0.99 } : {}}
+                    onClick={() => handleSelect(idx)}
+                    className={`w-full text-left p-4 rounded-xl border text-sm transition-all ${optClass} ${answered ? 'cursor-default' : 'cursor-pointer'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-medium flex-shrink-0">
+                        {String.fromCharCode(65 + idx)}
+                      </span>
+                      <span className="text-foreground">{opt}</span>
+                      {answered && idx === question.correctIndex && <CheckCircle2 className="w-4 h-4 text-healthy ml-auto" />}
+                      {answered && idx === selected && idx !== question.correctIndex && <XCircle className="w-4 h-4 text-critical ml-auto" />}
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {answered && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 p-4 rounded-xl bg-muted/50 border border-border"
+              >
+                <p className="text-xs text-muted-foreground">{question.explanation}</p>
+              </motion.div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {answered && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-6 flex justify-end"
+          >
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleNext}
+              className="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-medium rounded-lg text-primary-foreground bg-primary btn-glow"
+            >
+              {currentQ + 1 >= questions.length ? 'See Results' : 'Next'} <ArrowRight className="w-3 h-3" />
+            </motion.button>
+          </motion.div>
+        )}
       </div>
     </PageTransition>
   );

@@ -33,6 +33,29 @@ const LearnerProfile = () => {
             </div>
           </div>
           <ScoreRing score={overallHealth} size={70} strokeWidth={5} />
+
+          <div className="absolute top-6 right-6">
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/notifications/simulate`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ email: user?.email, type: 'reminder' })
+                  });
+                  const data = await res.json();
+                  if (res.ok) alert("Email Sent! Check server logs.");
+                  else alert(data.message);
+                } catch (e) { alert("Failed to send email"); }
+              }}
+              className="p-2 rounded-lg bg-secondary text-xs font-semibold hover:bg-secondary/80 transition-colors"
+            >
+              Test Email
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

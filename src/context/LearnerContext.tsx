@@ -7,6 +7,7 @@ import {
 
 export type LearnerContextType = {
   skills: any[];
+  loading: boolean;
   completeModule: (skillId: string, moduleId: string) => Promise<void>;
   completeAssessment: (skillId: string) => Promise<void>;
 };
@@ -15,9 +16,13 @@ const LearnerContext = createContext<LearnerContextType | null>(null);
 
 export const LearnerProvider = ({ children }: { children: React.ReactNode }) => {
   const [skills, setSkills] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchSkills().then(setSkills).catch(() => setSkills([]));
+    fetchSkills()
+      .then(setSkills)
+      .catch(() => setSkills([]))
+      .finally(() => setLoading(false));
   }, []);
 
   const completeModule = async (skillId: string, moduleId: string) => {
@@ -42,6 +47,7 @@ export const LearnerProvider = ({ children }: { children: React.ReactNode }) => 
     <LearnerContext.Provider
       value={{
         skills,
+        loading,
         completeModule,
         completeAssessment
       }}
