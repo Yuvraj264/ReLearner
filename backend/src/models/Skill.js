@@ -8,7 +8,9 @@ const moduleSchema = new mongoose.Schema({
 const retentionSchema = new mongoose.Schema({
   health: Number,
   lastReviewed: Date,
-  nextRecall: Date
+  nextRecall: Date,
+  decayRate: { type: Number, default: 0.1 },
+  criticalThreshold: { type: Number, default: 40 }
 });
 
 const skillSchema = new mongoose.Schema(
