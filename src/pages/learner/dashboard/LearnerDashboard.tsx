@@ -17,6 +17,7 @@ import RiskIndex from "@/components/dashboard/RiskIndex";
 import RecallMomentum from "@/components/dashboard/RecallMomentum";
 import WeeklyGrowth from "@/components/dashboard/WeeklyGrowth";
 import RecallCountdown from "@/components/dashboard/RecallCountdown";
+import ActivityTimeline from "@/components/dashboard/ActivityTimeline";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import SkillDetailsModal from "@/components/modals/SkillDetailsModal";
 
@@ -209,6 +210,16 @@ const LearnerDashboard = () => {
             ))}
           </div>
         </div>
+
+        {/* Activity Timeline Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+        >
+          <ActivityTimeline />
+        </motion.div>
+
       </div>
 
       <SkillDetailsModal
