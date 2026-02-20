@@ -16,7 +16,7 @@ import PageTransition from '@/components/PageTransition';
 import SkillCard from '@/components/cards/SkillCard';
 import { skillService } from '@/services/skillService';
 import { getSkillHealth } from '@/constants/skillLevels';
-import { calculatePriorityScore, sortSkillsByPriority, PriorityInput } from '@/utils/priorityEngine';
+import { calculatePriorityScore, sortSkillsByPriority, generatePriorityExplanation, PriorityInput } from '@/utils/priorityEngine';
 
 interface OptimizedSkill extends PriorityInput {
   id: string;
@@ -92,15 +92,7 @@ const RecallSessions = () => {
 
       // Generate localized reasoning based on the inputs
       const scheduled = top3.map(skill => {
-        const { priorityScore } = calculatePriorityScore(skill);
-        let reasoning = '';
-        if (skill.volatilityIndex > 7) {
-          reasoning = `High volatility detected. Predicted ${skill.currentRetention - skill.predictedRetention > 15 ? 'sharp' : 'steady'} drop to ${Math.round(skill.predictedRetention)}%.`;
-        } else if (skill.daysSinceLastReview > 7) {
-          reasoning = `Overdue. It's been ${skill.daysSinceLastReview} days since your last review.`;
-        } else {
-          reasoning = `Priority Factor ${Math.round(priorityScore)} requires immediate reinforcement.`;
-        }
+        const reasoning = generatePriorityExplanation(skill);
         return { ...skill, reasoning };
       });
 

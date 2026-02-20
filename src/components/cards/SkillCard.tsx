@@ -7,7 +7,7 @@ import ScoreRing from '@/components/charts/ScoreRing';
 import { useNavigate } from 'react-router-dom';
 import { Activity, AlertTriangle, ArrowDown, Calculator, CalendarClock, TrendingDown, Clock, AlertCircle, Sparkles } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { calculatePriorityScore } from '@/utils/priorityEngine';
+import { calculatePriorityScore, generatePriorityExplanation } from '@/utils/priorityEngine';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SkillCardProps {
@@ -107,21 +107,15 @@ const SkillCard = ({
 
     const volatility = decayRate ? decayRate * 100 : 5;
 
-    const engineResult = calculatePriorityScore({
+    const engineInput = {
       currentRetention: healthScore,
       predictedRetention: projectedRetention,
       daysSinceLastReview: Math.max(0, daysSince),
       volatilityIndex: volatility
-    });
+    };
 
-    let text = '';
-    if (volatility > 7) {
-      text = `High volatility (${volatility.toFixed(1)}). Projected drop to ${Math.round(projectedRetention)}%.`;
-    } else if (daysSince > 7) {
-      text = `Overdue by ${daysSince} days. Review needed to halt decay.`;
-    } else {
-      text = `Compound priority factor of ${Math.round(engineResult.priorityScore)}.`;
-    }
+    const engineResult = calculatePriorityScore(engineInput);
+    const text = generatePriorityExplanation(engineInput);
 
     return { ...engineResult, reasoningText: text };
   }, [learned, healthScore, projectedRetention, lastRecallDate, decayRate]);

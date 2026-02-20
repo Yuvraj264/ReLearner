@@ -73,3 +73,23 @@ export const sortSkillsByPriority = <T extends PriorityInput>(skills: T[]): T[] 
         return scoreB - scoreA;
     });
 };
+
+/**
+ * Generates a short, human-readable explanation of why a skill is prioritized.
+ * 
+ * @param skill The skill inputs containing current retention, predicted retention, etc.
+ * @returns A concise string explaining the priority.
+ */
+export const generatePriorityExplanation = (skill: PriorityInput): string => {
+    const { priorityScore } = calculatePriorityScore(skill);
+
+    if (skill.volatilityIndex > 7) {
+        return `High volatility detected. Predicted ${skill.currentRetention - skill.predictedRetention > 15 ? 'sharp' : 'steady'} drop to ${Math.round(skill.predictedRetention)}%.`;
+    }
+
+    if (skill.daysSinceLastReview > 7) {
+        return `Overdue. It's been ${skill.daysSinceLastReview} days since your last review.`;
+    }
+
+    return `Priority Factor ${Math.round(priorityScore)} requires immediate reinforcement.`;
+};
