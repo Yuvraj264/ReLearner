@@ -21,6 +21,7 @@ interface SkillCardProps {
   totalModules: number;
   decayRate?: number;
   criticalThreshold?: number;
+  onClick?: () => void;
 }
 
 const statusGlow: Record<SkillHealthStatus, string> = {
@@ -76,7 +77,7 @@ const MiniDecayGraph = ({ currentScore, decayRate = 0.1, color }: { currentScore
 const SkillCard = ({
   id, name, category, healthScore, learned, enrolled,
   nextRecallDate, lastRecallDate, modulesCompleted, totalModules,
-  decayRate = 0.1, criticalThreshold = 40
+  decayRate = 0.1, criticalThreshold = 40, onClick
 }: SkillCardProps) => {
   const navigate = useNavigate();
   const health = getSkillHealth(healthScore);
@@ -102,7 +103,7 @@ const SkillCard = ({
       className={`glass-card relative overflow-hidden group cursor-pointer border transition-all duration-300 ${learned ? statusGlow[health] : 'border-glass-border hover:border-primary/30 hover:shadow-glow-primary'}`}
       whileHover={{ y: -4, scale: 1.01 }}
       whileTap={{ scale: 0.98 }}
-      onClick={() => navigate(`/learner/skill/${id}`)}
+      onClick={() => onClick ? onClick() : navigate(`/learner/skill/${id}`)}
       layout
     >
       <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

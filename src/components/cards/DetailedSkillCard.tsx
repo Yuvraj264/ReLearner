@@ -16,6 +16,7 @@ interface DetailedSkillCardProps {
     lastRecallDate?: string | null;
     decayRate?: number;
     criticalThreshold?: number;
+    onClick?: () => void;
 }
 
 const statusColor: Record<SkillHealthStatus, string> = {
@@ -32,7 +33,7 @@ const statusBorder: Record<SkillHealthStatus, string> = {
 
 const DetailedSkillCard = ({
     id, name, category, healthScore, learned,
-    lastRecallDate, decayRate = 0.05, criticalThreshold = 40
+    lastRecallDate, decayRate = 0.05, criticalThreshold = 40, onClick
 }: DetailedSkillCardProps) => {
     const navigate = useNavigate();
     const health = getSkillHealth(healthScore);
@@ -50,8 +51,8 @@ const DetailedSkillCard = ({
     return (
         <motion.div
             layout
-            className={`group relative overflow-hidden rounded-xl bg-card/40 backdrop-blur-md border border-white/5 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${border}`}
-            onClick={() => navigate(`/learner/skill/${id}`)}
+            className={`group relative overflow-hidden rounded-xl bg-card/40 backdrop-blur-md border border-white/5 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${border} cursor-pointer`}
+            onClick={() => onClick ? onClick() : navigate(`/learner/skill/${id}`)}
         >
             {/* Glow Effect */}
             <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-${health}`} />
@@ -115,8 +116,7 @@ const DetailedSkillCard = ({
                             currentScore={healthScore}
                             decayRate={decayRate}
                             height={200}
-                            showTooltip={false}
-                            hideAxis={true}
+                            showAxes={false}
                         />
                     </div>
 

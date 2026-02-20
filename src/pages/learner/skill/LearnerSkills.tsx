@@ -6,10 +6,14 @@ import DetailedSkillCard from '@/components/cards/DetailedSkillCard';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { skillService } from '@/services/skillService';
 import { BookOpen, Search } from 'lucide-react';
+import SkillDetailsModal from '@/components/modals/SkillDetailsModal';
 
 const LearnerSkills = () => {
   const [tab, setTab] = useState<'enrolled' | 'available'>('enrolled');
   const [search, setSearch] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [selectedSkill, setSelectedSkill] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const enrolled = skillService.getEnrolledSkills();
   const available = skillService.getAvailableSkills();
@@ -67,11 +71,21 @@ const LearnerSkills = () => {
                 lastRecallDate={skill.lastRecallDate}
                 decayRate={skill.decayRate}
                 criticalThreshold={skill.criticalThreshold}
+                onClick={() => {
+                  setSelectedSkill(skill);
+                  setIsModalOpen(true);
+                }}
               />
             ))}
           </div>
         )}
       </div>
+
+      <SkillDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        skill={selectedSkill}
+      />
     </PageTransition>
   );
 };

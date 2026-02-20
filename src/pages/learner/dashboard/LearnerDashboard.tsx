@@ -18,6 +18,7 @@ import RecallMomentum from "@/components/dashboard/RecallMomentum";
 import WeeklyGrowth from "@/components/dashboard/WeeklyGrowth";
 import RecallCountdown from "@/components/dashboard/RecallCountdown";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
+import SkillDetailsModal from "@/components/modals/SkillDetailsModal";
 
 import { useLearner } from "@/context/LearnerContext";
 import { calculateOverallScore } from "@/utils/scoreUtils";
@@ -25,6 +26,10 @@ import { calculateOverallScore } from "@/utils/scoreUtils";
 const LearnerDashboard = () => {
   const navigate = useNavigate();
   const { skills, loading } = useLearner();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [selectedSkill, setSelectedSkill] = React.useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
 
   const learnedSkills = useMemo(
     () => skills.filter(s => s.status === "completed"),
@@ -195,12 +200,22 @@ const LearnerDashboard = () => {
                   criticalThreshold={skill.retention?.criticalThreshold}
                   modulesCompleted={skill.completedModules}
                   totalModules={skill.totalModules}
+                  onClick={() => {
+                    setSelectedSkill(skill);
+                    setIsModalOpen(true);
+                  }}
                 />
               </motion.div>
             ))}
           </div>
         </div>
       </div>
+
+      <SkillDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        skill={selectedSkill}
+      />
     </PageTransition>
   );
 };
