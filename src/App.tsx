@@ -22,6 +22,7 @@ import SkillAnalytics from "@/pages/admin/skill-analytics/SkillAnalytics";
 import LearnerActivity from "@/pages/admin/learner-activity/LearnerActivity";
 import RetentionEngine from "@/pages/admin/retention-engine/RetentionEngine";
 import NotFound from "./pages/NotFound";
+import ActionCenter from "@/pages/learner/priority/ActionCenter";
 
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
@@ -50,6 +51,7 @@ const App = () => (
               <Route index element={<LearnerDashboard />} />
               <Route path="onboarding" element={<Onboarding />} />
               <Route path="dashboard" element={<LearnerDashboard />} />
+              <Route path="action-center" element={<ActionCenter />} />
               <Route path="skills" element={<LearnerSkills />} />
               <Route path="skill/:skillId" element={<SkillDetail />} />
               <Route path="recall" element={<RecallSessions />} />

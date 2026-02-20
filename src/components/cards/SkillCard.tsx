@@ -5,8 +5,10 @@ import { getSkillHealth, type SkillHealthStatus } from '@/constants/skillLevels'
 import { calculatePredictedRetention, calculateDaysUntilCritical, suggestOptimalRecallDate } from '@/utils/retentionCalculator';
 import ScoreRing from '@/components/charts/ScoreRing';
 import { useNavigate } from 'react-router-dom';
-import { Activity, AlertTriangle, ArrowDown, Calculator, CalendarClock, TrendingDown, Clock, AlertCircle } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowDown, Calculator, CalendarClock, TrendingDown, Clock, AlertCircle, Sparkles } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { calculatePriorityScore } from '@/utils/priorityEngine';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SkillCardProps {
   id: string;
@@ -96,7 +98,46 @@ const SkillCard = ({
     return suggestOptimalRecallDate(lastRecallDate || new Date().toISOString(), daysToCritical);
   }, [lastRecallDate, daysToCritical]);
 
+  const { priorityScore, urgencyLevel, reasoningText } = useMemo(() => {
+    if (!learned) return { priorityScore: 0, urgencyLevel: 'Low', reasoningText: '' };
+
+    // Fallback values if dates aren't present
+    const reviewDate = lastRecallDate ? new Date(lastRecallDate) : new Date();
+    const daysSince = Math.floor((Date.now() - reviewDate.getTime()) / (1000 * 3600 * 24));
+
+    const volatility = decayRate ? decayRate * 100 : 5;
+
+    const engineResult = calculatePriorityScore({
+      currentRetention: healthScore,
+      predictedRetention: projectedRetention,
+      daysSinceLastReview: Math.max(0, daysSince),
+      volatilityIndex: volatility
+    });
+
+    let text = '';
+    if (volatility > 7) {
+      text = `High volatility (${volatility.toFixed(1)}). Projected drop to ${Math.round(projectedRetention)}%.`;
+    } else if (daysSince > 7) {
+      text = `Overdue by ${daysSince} days. Review needed to halt decay.`;
+    } else {
+      text = `Compound priority factor of ${Math.round(engineResult.priorityScore)}.`;
+    }
+
+    return { ...engineResult, reasoningText: text };
+  }, [learned, healthScore, projectedRetention, lastRecallDate, decayRate]);
+
   const strokeColor = health === 'healthy' ? 'var(--healthy)' : health === 'at_risk' ? 'var(--warning)' : 'var(--critical)';
+
+  // Normalize priority to 100 max for width percentage (cap at 100)
+  const priorityPercent = Math.min(100, Math.round((Math.max(0, priorityScore) / 120) * 100));
+
+  // Determine gradient color based on percentage
+  const getGradientClasses = () => {
+    if (urgencyLevel === 'Critical') return 'from-critical/80 to-critical';
+    if (urgencyLevel === 'High') return 'from-orange-500/80 to-orange-500';
+    if (urgencyLevel === 'Medium') return 'from-warning/80 to-warning';
+    return 'from-healthy/80 to-healthy';
+  };
 
   return (
     <motion.div
@@ -180,6 +221,38 @@ const SkillCard = ({
                 </div>
               </div>
             </div>
+
+            {/* Priority Meter */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="mt-3 cursor-help mb-1 relative z-20">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-semibold tracking-wide flex items-center gap-1 text-muted-foreground uppercase">
+                      <Sparkles size={10} className={urgencyLevel === 'Critical' ? 'text-critical animate-pulse' : ''} />
+                      Priority Factor
+                    </span>
+                    <span className="text-[10px] font-mono text-muted-foreground">{Math.round(priorityScore)} pts</span>
+                  </div>
+
+                  <div className="h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden relative">
+                    <motion.div
+                      className={`absolute inset-y-0 left-0 bg-gradient-to-r ${getGradientClasses()} rounded-full`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${priorityPercent}%` }}
+                      transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+                    />
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="bg-card/95 backdrop-blur-xl border border-white/10 text-foreground p-3 max-w-xs shadow-xl">
+                <p className="font-semibold text-sm mb-1">{urgencyLevel} Priority</p>
+                <p className="text-xs text-muted-foreground">{reasoningText}</p>
+                <div className="mt-2 pt-2 border-t border-white/10 text-[10px] flex justify-between">
+                  <span className="text-muted-foreground">Engine Score:</span>
+                  <span className="font-mono text-foreground font-semibold">{priorityScore.toFixed(1)}</span>
+                </div>
+              </TooltipContent>
+            </Tooltip>
 
             <MiniDecayGraph currentScore={healthScore} decayRate={decayRate} color={`hsl(${strokeColor})`} />
           </>

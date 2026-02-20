@@ -16,10 +16,21 @@ import PageTransition from '@/components/PageTransition';
 import SkillCard from '@/components/cards/SkillCard';
 import { skillService } from '@/services/skillService';
 import { getSkillHealth } from '@/constants/skillLevels';
+import { calculatePriorityScore, sortSkillsByPriority, PriorityInput } from '@/utils/priorityEngine';
+
+interface OptimizedSkill extends PriorityInput {
+  id: string;
+  name: string;
+  category: string;
+  reasoning: string;
+  rawSkill: unknown;
+}
 
 const RecallSessions = () => {
   const navigate = useNavigate();
   const allSkills = skillService.getLearnedSkills();
+  const [isOptimizing, setIsOptimizing] = React.useState(false);
+  const [optimizedSchedule, setOptimizedSchedule] = React.useState<OptimizedSkill[]>([]);
 
   // Group skills by health status
   const { critical, atRisk, healthy } = useMemo(() => {
@@ -47,6 +58,56 @@ const RecallSessions = () => {
 
     return { minutes, level, color };
   }, [critical, atRisk, healthy]);
+
+  const handleOptimize = () => {
+    setIsOptimizing(true);
+    setOptimizedSchedule([]);
+
+    // Simulate backend engine run
+    setTimeout(() => {
+      const skillsWithPriority = allSkills.map(s => {
+        const currentRetention = s.healthScore ?? 100;
+        const decayRate = s.decayRate ?? 0.05;
+        const predictedRetention = currentRetention * Math.exp(-decayRate * 3);
+        const lastReviewDate = s.lastRecallDate ? new Date(s.lastRecallDate) : new Date();
+        const daysSinceLastReview = Math.floor((Date.now() - lastReviewDate.getTime()) / (1000 * 3600 * 24));
+        const volatilityIndex = s.decayRate ? s.decayRate * 100 : Math.random() * 10;
+
+        const priorityInput: OptimizedSkill = {
+          id: s.id,
+          name: s.name,
+          category: s.category,
+          currentRetention,
+          predictedRetention,
+          daysSinceLastReview: Math.max(0, daysSinceLastReview),
+          volatilityIndex,
+          rawSkill: s,
+          reasoning: ''
+        };
+        return priorityInput;
+      });
+
+      const sorted = sortSkillsByPriority(skillsWithPriority);
+      const top3 = sorted.slice(0, 3);
+
+      // Generate localized reasoning based on the inputs
+      const scheduled = top3.map(skill => {
+        const { priorityScore } = calculatePriorityScore(skill);
+        let reasoning = '';
+        if (skill.volatilityIndex > 7) {
+          reasoning = `High volatility detected. Predicted ${skill.currentRetention - skill.predictedRetention > 15 ? 'sharp' : 'steady'} drop to ${Math.round(skill.predictedRetention)}%.`;
+        } else if (skill.daysSinceLastReview > 7) {
+          reasoning = `Overdue. It's been ${skill.daysSinceLastReview} days since your last review.`;
+        } else {
+          reasoning = `Priority Factor ${Math.round(priorityScore)} requires immediate reinforcement.`;
+        }
+        return { ...skill, reasoning };
+      });
+
+      setOptimizedSchedule(scheduled);
+      setIsOptimizing(false);
+    }, 1500);
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -94,13 +155,85 @@ const RecallSessions = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="btn-glow bg-primary text-primary-foreground px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 shadow-lg shadow-primary/20"
+              onClick={handleOptimize}
+              disabled={isOptimizing}
+              className={`btn-glow px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 shadow-lg transition-all ${isOptimizing ? 'bg-primary/50 text-primary-foreground/50 cursor-not-allowed shadow-none' : 'bg-primary text-primary-foreground shadow-primary/20'}`}
             >
-              <Sparkles size={16} />
-              Auto Optimize
+              {isOptimizing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent"></div>
+                  Optimizing...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={16} />
+                  Auto Optimize
+                </>
+              )}
             </motion.button>
           </div>
         </div>
+
+        {/* Optimized Schedule Overlay / Section */}
+        <AnimatePresence>
+          {optimizedSchedule.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 md:p-8 space-y-6 relative overflow-hidden backdrop-blur-sm">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+
+                <div className="flex items-center gap-3 text-primary relative z-10">
+                  <Sparkles className="w-6 h-6 animate-pulse" />
+                  <h2 className="text-xl font-bold tracking-tight">AI Optimized Session</h2>
+                  <span className="bg-primary/20 text-primary text-xs font-mono px-2 py-0.5 rounded-md border border-primary/20 ml-auto">
+                    READY
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+                  {optimizedSchedule.map((skill, idx) => (
+                    <motion.div
+                      key={skill.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.15 + 0.2 }}
+                      className="bg-card/50 backdrop-blur-md border border-white/10 rounded-xl p-5 hover:border-primary/40 hover:bg-card/80 transition-all group flex flex-col"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold">
+                            {idx + 1}
+                          </div>
+                          <span className="text-xs text-muted-foreground font-mono">{skill.category}</span>
+                        </div>
+                      </div>
+
+                      <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-1">{skill.name}</h3>
+
+                      <div className="flex p-3 rounded-lg bg-background/50 border border-white/5 mb-4 grow">
+                        <p className="text-xs text-muted-foreground/90 leading-relaxed font-medium">
+                          <AlertOctagon className="w-3.5 h-3.5 inline-block mr-1.5 text-warning -mt-0.5" />
+                          {skill.reasoning}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => navigate(`/learner/recall/${skill.id}`)}
+                        className="w-full py-2.5 rounded-lg bg-white/5 hover:bg-primary hover:text-primary-foreground text-foreground border border-white/10 hover:border-primary transition-all text-sm font-semibold flex items-center justify-center gap-2 mt-auto"
+                      >
+                        <Play className="w-4 h-4" /> Start Review
+                      </button>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Priority 1: CRITICAL (Red Zone) */}
         {critical.length > 0 && (
@@ -124,7 +257,11 @@ const RecallSessions = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {critical.map(skill => (
                 <motion.div key={skill.id} variants={itemVariants}>
-                  <SkillCard {...skill} />
+                  <SkillCard
+                    {...skill}
+                    modulesCompleted={skill.modules.filter(m => m.completed).length}
+                    totalModules={skill.modules.length}
+                  />
                 </motion.div>
               ))}
             </div>
@@ -150,7 +287,11 @@ const RecallSessions = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {atRisk.map(skill => (
                 <motion.div key={skill.id} variants={itemVariants}>
-                  <SkillCard {...skill} />
+                  <SkillCard
+                    {...skill}
+                    modulesCompleted={skill.modules.filter(m => m.completed).length}
+                    totalModules={skill.modules.length}
+                  />
                 </motion.div>
               ))}
             </div>

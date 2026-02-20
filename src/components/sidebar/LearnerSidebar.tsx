@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Target, RefreshCw, Bell, UserCircle, Zap, Activity, Brain, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Target, RefreshCw, Bell, UserCircle, Zap, Activity, Brain, ChevronLeft, ChevronRight, Flame } from 'lucide-react';
 import SidebarNavItem from '@/components/sidebar/SidebarNavItem';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -28,6 +28,7 @@ const LearnerSidebar = () => {
 
       <nav className={`space-y-2 flex-1 overflow-x-hidden ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
         <SidebarNavItem to="/learner/dashboard" label="Dashboard" icon={LayoutDashboard} isCollapsed={isCollapsed} />
+        <SidebarNavItem to="/learner/action-center" label="Action Center" icon={Flame} isCollapsed={isCollapsed} />
         <SidebarNavItem to="/learner/skills" label="My Skills" icon={Target} isCollapsed={isCollapsed} />
         <SidebarNavItem to="/learner/recall" label="Recall Sessions" icon={RefreshCw} isCollapsed={isCollapsed} />
         <SidebarNavItem to="/learner/insights" label="Neural Insights" icon={Brain} isCollapsed={isCollapsed} />

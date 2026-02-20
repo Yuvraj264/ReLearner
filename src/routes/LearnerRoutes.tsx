@@ -8,11 +8,13 @@ import RecallSessions from '@/pages/learner/recall/RecallSessions';
 import RecallQuiz from '@/pages/learner/recall/RecallQuiz';
 import Notifications from '@/pages/learner/notifications/Notifications';
 import LearnerProfile from '@/pages/learner/profile/LearnerProfile';
+import ActionCenter from '@/pages/learner/priority/ActionCenter';
 
 const LearnerRoutes = () => (
   <Route path="/learner" element={<LearnerLayout />}>
     <Route index element={<LearnerDashboard />} />
     <Route path="dashboard" element={<LearnerDashboard />} />
+    <Route path="action-center" element={<ActionCenter />} />
     <Route path="skills" element={<LearnerSkills />} />
     <Route path="skill/:skillId" element={<SkillDetail />} />
     <Route path="recall" element={<RecallSessions />} />
