@@ -23,6 +23,7 @@ import LearnerActivity from "@/pages/admin/learner-activity/LearnerActivity";
 import RetentionEngine from "@/pages/admin/retention-engine/RetentionEngine";
 import NotFound from "./pages/NotFound";
 import ActionCenter from "@/pages/learner/priority/ActionCenter";
+import InterviewMode from "@/pages/learner/interview/InterviewMode";
 
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
@@ -56,6 +57,7 @@ const App = () => (
               <Route path="skill/:skillId" element={<SkillDetail />} />
               <Route path="recall" element={<RecallSessions />} />
               <Route path="recall/:skillId" element={<RecallQuiz />} />
+              <Route path="interview" element={<InterviewMode />} />
               <Route path="analytics" element={<AnalyticsDashboard />} />
               <Route path="insights" element={<Insights />} />
               <Route path="notifications" element={<Notifications />} />
