@@ -5,8 +5,9 @@ import { X, Clock, BrainCircuit, ShieldAlert, CheckCircle2, AlertTriangle, Arrow
 import { Slider } from '@/components/ui/slider';
 import PageTransition from '@/components/PageTransition';
 import { skillService } from '@/services/skillService';
+import CountdownTimer from '@/components/interview/CountdownTimer';
 
-const INTERVIEW_TIME = 60; // 60 seconds per question
+const QUESTION_DURATION_MINS = 10; // 10 minutes per question
 
 interface InterviewQuestion {
     id: string;
@@ -21,7 +22,7 @@ const InterviewMode = () => {
     const navigate = useNavigate();
     const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [timeLeft, setTimeLeft] = useState(INTERVIEW_TIME);
+    const [isTimeLow, setIsTimeLow] = useState(false);
     const [hasAnswered, setHasAnswered] = useState(false);
     const [confidence, setConfidence] = useState([50]);
     const [isFinished, setIsFinished] = useState(false);
@@ -52,29 +53,12 @@ const InterviewMode = () => {
         setQuestions(hardQuestions);
     }, []);
 
-    // Timer logic
-    useEffect(() => {
-        if (hasAnswered || isFinished || questions.length === 0) return;
-
-        const timer = setInterval(() => {
-            setTimeLeft(prev => {
-                if (prev <= 1) {
-                    setHasAnswered(true);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, [currentIndex, hasAnswered, isFinished, questions]);
-
     const handleNext = () => {
         if (currentIndex < questions.length - 1) {
             setCurrentIndex(prev => prev + 1);
-            setTimeLeft(INTERVIEW_TIME);
             setHasAnswered(false);
             setConfidence([50]);
+            setIsTimeLow(false);
         } else {
             setIsFinished(true);
         }
@@ -87,7 +71,6 @@ const InterviewMode = () => {
     if (questions.length === 0) return null;
 
     const currentQuestion = questions[currentIndex];
-    const isTimeLow = timeLeft <= 15 && !hasAnswered;
 
     if (isFinished) {
         return (
@@ -144,15 +127,12 @@ const InterviewMode = () => {
                     {/* Timer */}
                     <AnimatePresence mode="popLayout">
                         {!hasAnswered && (
-                            <motion.div
-                                key="timer"
-                                initial={{ scale: 1.1, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.9, opacity: 0 }}
-                                className={`text-7xl md:text-9xl font-black font-mono tracking-tighter mb-12 drop-shadow-2xl flex items-center justify-center tabular-nums transition-colors duration-300 ${isTimeLow ? 'text-critical animate-pulse shadow-[0_0_50px_hsl(var(--critical))]' : 'text-primary'}`}
-                            >
-                                {timeLeft}
-                            </motion.div>
+                            <CountdownTimer
+                                key={`timer-${currentIndex}`}
+                                totalDuration={QUESTION_DURATION_MINS}
+                                onTimeUp={() => setHasAnswered(true)}
+                                onCriticalChange={setIsTimeLow}
+                            />
                         )}
                     </AnimatePresence>
 
