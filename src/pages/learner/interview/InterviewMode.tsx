@@ -6,6 +6,7 @@ import { Slider } from '@/components/ui/slider';
 import PageTransition from '@/components/PageTransition';
 import { skillService } from '@/services/skillService';
 import CountdownTimer from '@/components/interview/CountdownTimer';
+import { calculateNextDifficulty, AdaptiveDifficultyState, getDifficultyLabel } from '@/utils/adaptiveDifficulty';
 
 const QUESTION_DURATION_MINS = 10; // 10 minutes per question
 
@@ -26,6 +27,12 @@ const InterviewMode = () => {
     const [hasAnswered, setHasAnswered] = useState(false);
     const [confidence, setConfidence] = useState([50]);
     const [isFinished, setIsFinished] = useState(false);
+
+    // Adaptive difficulty state
+    const [adaptiveState, setAdaptiveState] = useState<AdaptiveDifficultyState>({
+        currentLevel: 3, // Start at Level 3 (Medium)
+        consecutiveCorrect: 0
+    });
 
     // Initialize with some tough questions based on learned skills
     useEffect(() => {
@@ -54,6 +61,11 @@ const InterviewMode = () => {
     }, []);
 
     const handleNext = () => {
+        // Evaluate answer based on self-assessed confidence (>= 75 is considered "Correct")
+        const isCorrect = confidence[0] >= 75;
+        const newState = calculateNextDifficulty(adaptiveState, isCorrect);
+        setAdaptiveState(newState);
+
         if (currentIndex < questions.length - 1) {
             setCurrentIndex(prev => prev + 1);
             setHasAnswered(false);
@@ -155,9 +167,14 @@ const InterviewMode = () => {
                                         {currentQuestion.skillName}
                                     </span>
                                 </div>
-                                <div className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 border backdrop-blur-md ${currentQuestion.difficulty === 'Extreme' ? 'bg-critical/10 text-critical border-critical/30' : 'bg-warning/10 text-warning border-warning/30'}`}>
+                                <div className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 border backdrop-blur-md ${adaptiveState.currentLevel >= 4
+                                        ? 'bg-critical/10 text-critical border-critical/30'
+                                        : adaptiveState.currentLevel === 3
+                                            ? 'bg-warning/10 text-warning border-warning/30'
+                                            : 'bg-healthy/10 text-healthy border-healthy/30'
+                                    }`}>
                                     <ShieldAlert size={14} />
-                                    {currentQuestion.difficulty}
+                                    Lvl {adaptiveState.currentLevel}: {getDifficultyLabel(adaptiveState.currentLevel)}
                                 </div>
                             </div>
 
