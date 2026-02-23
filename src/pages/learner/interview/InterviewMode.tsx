@@ -6,6 +6,7 @@ import { Slider } from '@/components/ui/slider';
 import PageTransition from '@/components/PageTransition';
 import { skillService } from '@/services/skillService';
 import CountdownTimer from '@/components/interview/CountdownTimer';
+import InterviewReport from '@/components/interview/InterviewReport';
 import { calculateNextDifficulty, AdaptiveDifficultyState, getDifficultyLabel } from '@/utils/adaptiveDifficulty';
 
 const QUESTION_DURATION_MINS = 10; // 10 minutes per question
@@ -27,6 +28,11 @@ const InterviewMode = () => {
     const [hasAnswered, setHasAnswered] = useState(false);
     const [confidence, setConfidence] = useState([50]);
     const [isFinished, setIsFinished] = useState(false);
+
+    // Metrics tracking
+    const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
+    const [currentTimeSpent, setCurrentTimeSpent] = useState<number>(0);
+    const [responses, setResponses] = useState<{ skillName: string; confidence: number; timeSpent: number }[]>([]);
 
     // Adaptive difficulty state
     const [adaptiveState, setAdaptiveState] = useState<AdaptiveDifficultyState>({
@@ -58,6 +64,7 @@ const InterviewMode = () => {
         }
 
         setQuestions(hardQuestions);
+        setQuestionStartTime(Date.now());
     }, []);
 
     const handleNext = () => {
@@ -66,11 +73,19 @@ const InterviewMode = () => {
         const newState = calculateNextDifficulty(adaptiveState, isCorrect);
         setAdaptiveState(newState);
 
+        // Record metrics
+        setResponses(prev => [...prev, {
+            skillName: questions[currentIndex].skillName,
+            confidence: confidence[0],
+            timeSpent: currentTimeSpent
+        }]);
+
         if (currentIndex < questions.length - 1) {
             setCurrentIndex(prev => prev + 1);
             setHasAnswered(false);
             setConfidence([50]);
             setIsTimeLow(false);
+            setQuestionStartTime(Date.now());
         } else {
             setIsFinished(true);
         }
@@ -80,30 +95,39 @@ const InterviewMode = () => {
         navigate('/learner/dashboard');
     };
 
+    const handleRetry = () => {
+        setResponses([]);
+        setCurrentIndex(0);
+        setHasAnswered(false);
+        setIsFinished(false);
+        setQuestionStartTime(Date.now());
+        setAdaptiveState({ currentLevel: 3, consecutiveCorrect: 0 });
+    };
+
     if (questions.length === 0) return null;
 
     const currentQuestion = questions[currentIndex];
 
     if (isFinished) {
+        const correctCount = responses.filter(r => r.confidence >= 75).length;
+        const avgConf = responses.length ? responses.reduce((acc, r) => acc + r.confidence, 0) / responses.length : 0;
+        const avgTime = responses.length ? responses.reduce((acc, r) => acc + r.timeSpent, 0) / responses.length : 0;
+
+        const sortedByConf = [...responses].sort((a, b) => b.confidence - a.confidence);
+        const strongest = sortedByConf.length > 0 ? sortedByConf[0].skillName : null;
+        const weakest = sortedByConf.length > 0 ? sortedByConf[sortedByConf.length - 1].skillName : null;
+
         return (
-            <PageTransition>
-                <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center">
-                    <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="max-w-md w-full glass-card p-10 flex flex-col items-center shadow-glow-primary"
-                    >
-                        <div className="w-20 h-20 rounded-full bg-healthy/20 flex items-center justify-center text-healthy mb-6">
-                            <CheckCircle2 size={40} />
-                        </div>
-                        <h2 className="text-3xl font-bold text-foreground mb-4">Simulation Complete</h2>
-                        <p className="text-muted-foreground mb-8">You handled the pressure well. Your confidence ratings have been logged for the retention engine to analyze.</p>
-                        <button onClick={handleExit} className="btn-glow bg-primary text-primary-foreground w-full py-4 rounded-xl font-bold text-lg">
-                            Return to Dashboard
-                        </button>
-                    </motion.div>
-                </div>
-            </PageTransition>
+            <InterviewReport
+                totalQuestions={responses.length}
+                correctAnswers={correctCount}
+                averageConfidence={avgConf}
+                averageTimePerQuestion={avgTime}
+                strongestSkill={strongest}
+                weakestSkill={weakest}
+                onRetry={handleRetry}
+                onExit={handleExit}
+            />
         )
     }
 
@@ -142,7 +166,11 @@ const InterviewMode = () => {
                             <CountdownTimer
                                 key={`timer-${currentIndex}`}
                                 totalDuration={QUESTION_DURATION_MINS}
-                                onTimeUp={() => setHasAnswered(true)}
+                                onTimeUp={() => {
+                                    setHasAnswered(true);
+                                    // if time is up, time spent is the max duration
+                                    setCurrentTimeSpent(QUESTION_DURATION_MINS * 60);
+                                }}
                                 onCriticalChange={setIsTimeLow}
                             />
                         )}
@@ -168,10 +196,10 @@ const InterviewMode = () => {
                                     </span>
                                 </div>
                                 <div className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 border backdrop-blur-md ${adaptiveState.currentLevel >= 4
-                                        ? 'bg-critical/10 text-critical border-critical/30'
-                                        : adaptiveState.currentLevel === 3
-                                            ? 'bg-warning/10 text-warning border-warning/30'
-                                            : 'bg-healthy/10 text-healthy border-healthy/30'
+                                    ? 'bg-critical/10 text-critical border-critical/30'
+                                    : adaptiveState.currentLevel === 3
+                                        ? 'bg-warning/10 text-warning border-warning/30'
+                                        : 'bg-healthy/10 text-healthy border-healthy/30'
                                     }`}>
                                     <ShieldAlert size={14} />
                                     Lvl {adaptiveState.currentLevel}: {getDifficultyLabel(adaptiveState.currentLevel)}
@@ -193,7 +221,10 @@ const InterviewMode = () => {
                                         className="flex justify-center mt-10"
                                     >
                                         <button
-                                            onClick={() => setHasAnswered(true)}
+                                            onClick={() => {
+                                                setHasAnswered(true);
+                                                setCurrentTimeSpent(Math.floor((Date.now() - questionStartTime) / 1000));
+                                            }}
                                             className="btn-glow bg-primary text-primary-foreground px-12 py-4 rounded-xl font-bold text-lg w-full md:w-auto shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
                                         >
                                             Finish Answer
