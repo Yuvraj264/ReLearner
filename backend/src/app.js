@@ -9,8 +9,9 @@ import adminRoutes from "./routes/admin.routes.js";
 import healthRoutes from "./routes/health.routes.js";
 
 import authRoutes from "./routes/auth.routes.js";
-
 import notificationRoutes from "./routes/notification.routes.js";
+import activityRoutes from "./routes/activity.routes.js";
+import interviewRoutes from "./routes/interview.routes.js";
 
 const app = express();
 app.use("/health", healthRoutes);
@@ -30,5 +31,7 @@ app.use("/api/skills", skillRoutes);
 app.use("/api/recall", recallRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/activities", activityRoutes);
+app.use("/api/interviews", interviewRoutes);
 
 export default app;

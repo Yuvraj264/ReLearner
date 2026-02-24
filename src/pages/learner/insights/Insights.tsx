@@ -8,7 +8,7 @@ import {
     TrendingUp, TrendingDown, Activity, Award, Zap,
     AlertTriangle, ShieldCheck, ArrowRight, Brain
 } from 'lucide-react';
-import { skillService } from '@/services/skillService';
+import { useLearner } from '@/context/LearnerContext';
 import PageTransition from '@/components/PageTransition';
 
 // Types
@@ -21,24 +21,30 @@ interface SkillMetric {
 }
 
 const Insights = () => {
-    const skills = skillService.getAllSkills().filter(s => s.learned);
+    const { skills, loading } = useLearner();
+
+    // Fallback safely to empty array if skills is undefined
+    const learnedSkills = useMemo(() => {
+        if (!skills) return [];
+        return skills.filter(s => s.status === 'completed' || s.learned);
+    }, [skills]);
 
     // Computed Metrics
     const stableSkills = useMemo(() => {
-        return [...skills]
+        return [...learnedSkills]
             .sort((a, b) => b.healthScore - a.healthScore)
             .slice(0, 5);
-    }, [skills]);
+    }, [learnedSkills]);
 
     const volatileSkills = useMemo(() => {
-        return [...skills]
+        return [...learnedSkills]
             .sort((a, b) => (b.decayRate || 0) - (a.decayRate || 0))
             .slice(0, 3);
-    }, [skills]);
+    }, [learnedSkills]);
 
     const categoryPerformance = useMemo(() => {
         const cats: Record<string, { total: number; count: number }> = {};
-        skills.forEach(s => {
+        learnedSkills.forEach(s => {
             if (!cats[s.category]) cats[s.category] = { total: 0, count: 0 };
             cats[s.category].total += s.healthScore;
             cats[s.category].count += 1;
@@ -48,7 +54,7 @@ const Insights = () => {
             score: Math.round(data.total / data.count),
             count: data.count
         }));
-    }, [skills]);
+    }, [learnedSkills]);
 
     // Mock Trend Data (since we don't have real historical data stored per skill yet)
     const accuracyTrend = [
@@ -62,12 +68,12 @@ const Insights = () => {
     ];
 
     // Retention Matrix Data (Health vs. Decay Rate)
-    const retentionMatrix = skills.map((s, i) => ({
+    const retentionMatrix = learnedSkills.map((s, i) => ({
         x: 100 - (s.healthScore), // Risk (Inverted Health)
         y: (s.decayRate || 0.1) * 100, // Volatility
-        z: s.healthScore, // Bubble Size (Importance/Health)
-        name: s.name,
-        category: s.category
+        z: s.healthScore > 0 ? s.healthScore : 10, // Avoid zero bubble size
+        name: s.name || s.title || `Skill ${i}`,
+        category: s.category || 'General'
     }));
 
     const containerVariants = {
@@ -79,6 +85,14 @@ const Insights = () => {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0 }
     };
+
+    if (loading) {
+        return (
+            <div className="flex h-[50vh] items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
 
     return (
         <PageTransition>

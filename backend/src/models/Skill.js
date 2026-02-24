@@ -10,7 +10,8 @@ const retentionSchema = new mongoose.Schema({
   lastReviewed: Date,
   nextRecall: Date,
   decayRate: { type: Number, default: 0.1 },
-  criticalThreshold: { type: Number, default: 40 }
+  criticalThreshold: { type: Number, default: 40 },
+  volatilityIndex: { type: Number, default: 1.0 }
 });
 
 const skillSchema = new mongoose.Schema(

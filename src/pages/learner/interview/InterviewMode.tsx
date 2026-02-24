@@ -8,6 +8,7 @@ import { skillService } from '@/services/skillService';
 import CountdownTimer from '@/components/interview/CountdownTimer';
 import InterviewReport from '@/components/interview/InterviewReport';
 import { calculateNextDifficulty, AdaptiveDifficultyState, getDifficultyLabel } from '@/utils/adaptiveDifficulty';
+import { calculatePressurePerformance } from '@/utils/performanceMetrics';
 
 const QUESTION_DURATION_MINS = 10; // 10 minutes per question
 
@@ -103,6 +104,59 @@ const InterviewMode = () => {
         setQuestionStartTime(Date.now());
         setAdaptiveState({ currentLevel: 3, consecutiveCorrect: 0 });
     };
+
+    // Auto-save interview session to backend when finished
+    React.useEffect(() => {
+        if (isFinished) {
+            const submitReport = async () => {
+                try {
+                    const totalQuestions = responses.length;
+                    const correctCount = responses.filter(r => r.confidence >= 75).length;
+                    const accuracy = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+                    const avgConf = totalQuestions ? responses.reduce((acc, r) => acc + r.confidence, 0) / totalQuestions : 0;
+                    const avgTime = totalQuestions ? responses.reduce((acc, r) => acc + r.timeSpent, 0) / totalQuestions : 0;
+
+                    const sortedByConf = [...responses].sort((a, b) => b.confidence - a.confidence);
+                    const strongest = sortedByConf.length > 0 ? sortedByConf[0].skillName : null;
+                    const weakest = sortedByConf.length > 0 ? sortedByConf[sortedByConf.length - 1].skillName : null;
+
+                    const timeRemainingPercentage = Math.max(0, 1 - (avgTime / (QUESTION_DURATION_MINS * 60)));
+                    const pressure = calculatePressurePerformance(accuracy, timeRemainingPercentage);
+
+                    const token = localStorage.getItem('token');
+                    if (token) {
+                        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/interviews`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                skillName: questions[0]?.skillName || 'Multiple',
+                                difficultyLevel: adaptiveState.currentLevel,
+                                metrics: {
+                                    totalQuestions,
+                                    correctAnswers: correctCount,
+                                    accuracy,
+                                    averageConfidence: Math.round(avgConf),
+                                    averageTimePerQuestion: Math.round(avgTime),
+                                    pressureScore: pressure.score,
+                                    pressureInterpretation: pressure.interpretation,
+                                    strongestSkill: strongest || 'N/A',
+                                    weakestSkill: weakest || 'N/A'
+                                }
+                            })
+                        });
+                    }
+                } catch (err) {
+                    console.error("Failed to submit interview report:", err);
+                }
+            };
+
+            submitReport();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isFinished]);
 
     if (questions.length === 0) return null;
 

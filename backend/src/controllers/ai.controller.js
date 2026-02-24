@@ -1,4 +1,5 @@
 import Skill from '../models/Skill.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export const generateQuestions = async (req, res) => {
     try {
@@ -18,57 +19,49 @@ export const generateQuestions = async (req, res) => {
             return res.status(400).json({ message: 'Skill name or ID is required' });
         }
 
-        // SIMULATED AI LATENCY
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            return res.status(500).json({ message: "GEMINI_API_KEY is missing in environment variables" });
+        }
 
-        // MOCK AI RESPONSE GENERATOR
-        // In a real app, this would call OpenAI/Gemini API with the prompt:
-        // "Generate 3 adaptive recall questions for {targetSkillName} at {difficulty} level..."
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-        const mockQuestions = [
-            {
-                question: `Explaining the core concept of ${targetSkillName}: Which statement best describes its primary function?`,
-                options: [
-                    `It optimizes database queries for faster retrieval.`,
-                    `It functionality ensures modularity and reusability.`, // Generic positive answer
-                    `It is a legacy method replaced by newer frameworks.`,
-                    `It is primarily used for frontend styling.`
-                ],
-                correctIndex: 1,
-                explanation: `At an ${difficulty} level, understanding the modular nature of ${targetSkillName} is validating its primary architectural benefit.`
-            },
-            {
-                question: `Scenario: You encounter an edge case in ${targetSkillName} where performance drops. What is the most likely cause?`,
-                options: [
-                    `Memory leaks due to unclosed listeners.`, // Plausible technical answer
-                    `The server is restarting automatically.`,
-                    `CSS conflicts in the global namespace.`,
-                    `Incorrect API versioning.`
-                ],
-                correctIndex: 0,
-                explanation: `Performance drops in ${targetSkillName} are frequently associated with resource management issues like memory leaks.`
-            },
-            {
-                question: `When implementing ${targetSkillName}, which practice ensures the best long-term maintainability?`,
-                options: [
-                    `Hardcoding configuration values for speed.`,
-                    `Using strict type checking and documentation.`, // Best practice
-                    `Avoiding external dependencies entirely.`,
-                    `Writing all logic in a single file.`
-                ],
-                correctIndex: 1,
-                explanation: `For ${difficulty} users, adhering to strict typing and documentation is crucial for scaling ${targetSkillName} projects.`
-            }
-        ];
+        const prompt = `
+You are an expert technical interviewer simulating a high-pressure interview for a candidate. 
+Generate exactly 3 adaptive recall questions for the skill: "${targetSkillName}" at a "${difficulty}" difficulty level.
+
+The questions should be scenario-based where possible to test deep understanding, not just trivia.
+
+Output your response strictly as a JSON array of objects. Do not include any markdown formatting (like \`\`\`json), just the raw JSON.
+Each object must have the following structure:
+{
+  "question": "The interview question text",
+  "options": ["Option A", "Option B", "Option C", "Option D"],
+  "correctIndex": <integer from 0 to 3>,
+  "explanation": "A concise explanation of why the correct option is best",
+  "expectedConcepts": ["Core Concept 1", "Core Concept 2", "Core Concept 3"]
+}
+`;
+
+        const result = await model.generateContent(prompt);
+        let textResponse = result.response.text().trim();
+
+        // Strip markdown backticks if Gemini includes them
+        if (textResponse.startsWith('```')) {
+            textResponse = textResponse.replace(/^```(json)?\n?/, '').replace(/\n?```$/, '');
+        }
+
+        const generatedQuestions = JSON.parse(textResponse);
 
         return res.json({
             skill: targetSkillName,
             difficulty,
-            questions: mockQuestions
+            questions: generatedQuestions
         });
 
     } catch (error) {
         console.error('AI Generation Error:', error);
-        res.status(500).json({ message: 'Failed to generate questions' });
+        res.status(500).json({ message: 'Failed to generate questions. Ensure Gemini API key is valid.' });
     }
 };

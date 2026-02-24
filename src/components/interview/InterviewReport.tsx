@@ -2,12 +2,14 @@ import React from 'react';
 import { motion, Variants } from 'framer-motion';
 import { Target, TrendingUp, TrendingDown, Clock, BrainCircuit, Activity, RotateCcw } from 'lucide-react';
 import PageTransition from '@/components/PageTransition';
+import { calculatePressurePerformance } from '@/utils/performanceMetrics';
 
 export interface InterviewReportProps {
     totalQuestions: number;
     correctAnswers: number;
     averageConfidence: number;
     averageTimePerQuestion: number; // in seconds
+    maxTimePerQuestion?: number; // optional, default 600
     strongestSkill: string | null;
     weakestSkill: string | null;
     onRetry: () => void;
@@ -19,12 +21,17 @@ const InterviewReport: React.FC<InterviewReportProps> = ({
     correctAnswers,
     averageConfidence,
     averageTimePerQuestion,
+    maxTimePerQuestion = 600,
     strongestSkill,
     weakestSkill,
     onRetry,
     onExit
 }) => {
     const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+
+    // Calculate pressure score
+    const timeRemainingPercentage = Math.max(0, 1 - (averageTimePerQuestion / maxTimePerQuestion));
+    const pressure = calculatePressurePerformance(accuracy, timeRemainingPercentage);
 
     // Example logic for improvement focus:
     let improvementFocus = "Keep practicing!";
@@ -63,13 +70,13 @@ const InterviewReport: React.FC<InterviewReportProps> = ({
                 </motion.div>
 
                 <motion.div
-                    className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-8"
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full mb-8"
                     variants={containerVariants}
                     initial="hidden"
                     animate="show"
                 >
                     {/* Main Score Card */}
-                    <motion.div variants={itemVariants} className="glass-card p-6 md:p-8 flex flex-col justify-center items-center relative overflow-hidden group border-white/10 md:col-span-2 lg:col-span-1">
+                    <motion.div variants={itemVariants} className="glass-card p-6 md:p-8 flex flex-col justify-center items-center relative overflow-hidden group border-white/10 md:col-span-1 lg:col-span-1">
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50"></div>
                         <Target className="w-10 h-10 text-primary mb-4 opacity-80" />
                         <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">Overall Accuracy</h3>
@@ -89,7 +96,28 @@ const InterviewReport: React.FC<InterviewReportProps> = ({
                         <p className="text-xs text-muted-foreground mt-3 font-medium">({correctAnswers} of {totalQuestions} scenarios passed)</p>
                     </motion.div>
 
-                    <div className="grid grid-cols-2 gap-4 lg:col-span-1">
+                    {/* Pressure Performance Card */}
+                    <motion.div variants={itemVariants} className="glass-card p-6 md:p-8 flex flex-col justify-center items-center relative overflow-hidden group border-white/10 md:col-span-1 lg:col-span-1">
+                        <div className="absolute inset-0 bg-gradient-to-bl from-secondary/10 to-transparent opacity-50"></div>
+                        <Activity className="w-10 h-10 text-secondary mb-4 opacity-80" />
+                        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2 text-center">Pressure Rating</h3>
+                        <div className="flex items-baseline gap-2">
+                            <span className={`text-6xl font-black tracking-tighter ${pressure.score >= 80 ? 'text-healthy' : pressure.score >= 50 ? 'text-warning' : 'text-critical'}`}>
+                                {pressure.score}
+                            </span>
+                        </div>
+                        <div className="w-full bg-secondary/50 h-2 rounded-full mt-6 overflow-hidden">
+                            <motion.div
+                                className={`h-full ${pressure.score >= 80 ? 'bg-healthy' : pressure.score >= 50 ? 'bg-warning' : 'bg-critical'}`}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${pressure.score}%` }}
+                                transition={{ duration: 1, delay: 0.6, ease: "easeOut" }}
+                            />
+                        </div>
+                        <p className={`text-xs mt-3 font-bold uppercase ${pressure.score >= 80 ? 'text-healthy' : pressure.score >= 50 ? 'text-warning' : 'text-critical'}`}>{pressure.interpretation}</p>
+                    </motion.div>
+
+                    <div className="grid grid-cols-2 gap-4 md:col-span-2 lg:col-span-1">
                         {/* Confidence Card */}
                         <motion.div variants={itemVariants} className="glass-card p-6 flex flex-col justify-center items-center border-white/10">
                             <BrainCircuit className="w-6 h-6 text-foreground/50 mb-3" />

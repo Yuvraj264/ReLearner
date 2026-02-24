@@ -1,5 +1,6 @@
 import Skill from "../models/Skill.js";
 import SkillHistory from "../models/SkillHistory.js";
+import { logActivity } from "./activity.controller.js";
 
 export const submitRecall = async (req, res) => {
   const { skillId } = req.params;
@@ -31,5 +32,13 @@ export const submitRecall = async (req, res) => {
   );
 
   await skill.save();
+
+  await logActivity(
+    req.user.id,
+    "recall_completed",
+    "Recall Completed",
+    `Successfully reviewed "${skill.title}" with a boost of ${boost}.`
+  );
+
   res.json(skill);
 };

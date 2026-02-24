@@ -1,5 +1,6 @@
 import Skill from "../models/Skill.js";
 import SkillHistory from "../models/SkillHistory.js";
+import { logActivity } from "./activity.controller.js";
 
 const computeReadiness = skill => {
   if (!skill.retention) return 0;
@@ -8,7 +9,7 @@ const computeReadiness = skill => {
     Math.round(
       (skill.retention.health +
         (skill.completedModules / skill.totalModules) * 100) /
-        2
+      2
     ),
     100
   );
@@ -37,6 +38,13 @@ export const completeModule = async (req, res) => {
     action: "module_completed"
   });
 
+  await logActivity(
+    req.user.id,
+    "module_completed",
+    "Module Completed",
+    `Completed a module in "${skill.title}".`
+  );
+
   res.json(skill);
 };
 
@@ -59,10 +67,15 @@ export const completeAssessment = async (req, res) => {
     healthAfter: 80
   });
 
-  res.json(skill);
-  res.json({
-  ...skill.toObject(),
-  readiness: computeReadiness(skill)
-});
+  await logActivity(
+    req.user.id,
+    "recall_completed",
+    "Assessment Passed!",
+    `Passed the assessment for "${skill.title}". Skill learned!`
+  );
 
+  res.json({
+    ...skill.toObject(),
+    readiness: computeReadiness(skill)
+  });
 };
